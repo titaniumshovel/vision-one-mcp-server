@@ -226,12 +226,12 @@ func (c *CreditCalculator) FormatCreditReport(usage map[string]float64) string {
 			percentage = (credits / total) * 100
 		}
 		cost := c.EstimateMonthlyCost(credits)
-		report += fmt.Sprintf("  %-20s: %8.0f credits (%5.1f%%) - $%,.2f/month\n",
+		report += fmt.Sprintf("  %-20s: %8.0f credits (%5.1f%%) - $%.2f/month\n",
 			service, credits, percentage, cost)
 	}
 
 	report += fmt.Sprintf("\nTotal Monthly Credits: %.0f\n", total)
-	report += fmt.Sprintf("Estimated Monthly Cost: $%,.2f\n", c.EstimateMonthlyCost(total))
+	report += fmt.Sprintf("Estimated Monthly Cost: $%.2f\n", c.EstimateMonthlyCost(total))
 
 	// Add efficiency rating
 	efficiency := c.calculateEfficiencyRating(usage, total)

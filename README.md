@@ -10,6 +10,38 @@ This allows users to harness the power of Large Language Models (LLM) to interpr
 2. Allowing LLMs to gather information about security events and generate meaningful recommendations.
 3. Automating workflows to enhance the configuration of Trend Vision One services.
 4. Interacting with Trend Vision One web APIs without having to learn yet another company's APIs.
+5. **Understanding and optimizing Vision One credit usage** - Analyze actual credit consumption patterns, calculate estimated costs, and get actionable optimization recommendations.
+
+## Credit Management Features
+
+The MCP server includes comprehensive credit management capabilities to help you understand, track, and optimize your Vision One credit usage:
+
+### Credit Analysis
+- **Real-time usage analysis**: Analyze actual credit consumption across endpoints, workbench investigations, sandbox submissions, and OAT detections
+- **Cost estimation**: Calculate monthly costs based on current usage patterns
+- **Optimization recommendations**: Get specific suggestions to reduce credit waste and improve efficiency
+
+### Credit Calculator
+- Calculate estimated credits based on your deployment metrics:
+  - Number of endpoints (standard vs. Pro licenses)
+  - Daily alert investigation volumes
+  - Sandbox file/URL submissions
+  - Data lake search activity
+
+### User Credit Tracking
+- Input and store your own credit allocations
+- Track utilization across all Vision One services
+- Generate detailed utilization reports with:
+  - Service-by-service breakdown
+  - Utilization percentages
+  - Underutilized and overutilized service identification
+  - Cost projections
+
+### Data Storage
+Credit allocation data is stored locally in `~/.vision-one/credits.json`, providing:
+- Persistent tracking of your credit allocations
+- Historical usage patterns
+- Privacy (your credit data never leaves your machine)
 
 ## Security
 
@@ -198,15 +230,14 @@ Alternatively, copy the following into your `settings.json`.
 | Tool | Description | Mode |
 | ---- | ----------- | ---- |
 | `credits_endpoint_security_analysis` | Analyze endpoint security credit usage including Pro licenses and security features | `read` |
-| `credits_datalake_pipelines_analysis` | Analyze active data lake pipelines consuming credits | `read` |
-| `credits_oat_detections_analysis` | Analyze Observed Attack Techniques (OAT) detections for credit usage | `read` |
-| `credits_sandbox_usage_analysis` | Analyze sandbox submission usage for credit consumption | `read` |
 | `credits_workbench_alerts_analysis` | Analyze workbench alert investigation activity for credits | `read` |
+| `credits_sandbox_usage_analysis` | Analyze sandbox submission usage for credit consumption | `read` |
+| `credits_oat_detections_analysis` | Analyze Observed Attack Techniques (OAT) detections for credit usage | `read` |
 | `credits_search_statistics_analysis` | Analyze search activity and sensor statistics for credit usage | `read` |
 | `credits_comprehensive_analysis` | Run comprehensive credit usage analysis across all Vision One modules | `read` |
-| `credits_optimization_analysis` | Analyze credit allocation vs usage to identify optimization opportunities and cost savings | `read` |
-| `credits_limit_monitoring` | Monitor credit usage approaching limits and provide proactive optimization recommendations | `read` |
-| `credits_allocation_analysis` | Analyze current credit allocation efficiency and suggest reallocation strategies | `read` |
+| `credits_calculator` | Calculate estimated credit usage based on deployment metrics (endpoints, alerts, sandbox) | `read` |
+| `credits_user_input` | Store user's credit allocation data for tracking and analysis | `write` |
+| `credits_utilization_report` | Generate credit utilization report from stored allocations with optimization recommendations | `read` |
 
 ## Architecture
 

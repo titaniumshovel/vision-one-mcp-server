@@ -255,7 +255,7 @@ func (cs *CreditStorage) GenerateUtilizationReport() (string, error) {
 	// Add cost information if available
 	if data.CostPerCredit > 0 {
 		monthlyCost := totalUsed * data.CostPerCredit
-		report += fmt.Sprintf("\nEstimated Monthly Cost: $%,.2f\n", monthlyCost)
+		report += fmt.Sprintf("\nEstimated Monthly Cost: $%.2f\n", monthlyCost)
 	}
 
 	return report, nil
