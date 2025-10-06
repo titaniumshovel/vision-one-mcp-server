@@ -27,7 +27,22 @@ This allows users to harness the power of Large Language Models (LLM) to interpr
 3. Have [Docker](https://www.docker.com/) installed.
 4. Have the latest version of [Visual Studio Code](https://code.visualstudio.com/) installed.
 
-### Use With VSCode + GitHub Copilot
+### Platform-Specific Setup Guides
+
+For detailed setup instructions specific to your operating system, see:
+
+- **[Windows Setup Guide](./SETUP_WINDOWS.md)** - Detailed instructions for Windows including Docker and WSL methods
+- **[macOS Setup Guide](./SETUP_MACOS.md)** - Setup instructions for macOS including binary and Docker methods
+- **[Linux Setup Guide](./SETUP_LINUX.md)** - Setup guide for Linux distributions
+- **[Windows WSL Setup Guide](./SETUP_VSCODE_WSL.md)** - Advanced setup for Windows users running VSCode with WSL2
+
+All guides include:
+- Step-by-step installation instructions
+- VSCode + GitHub Copilot integration
+- Configuration for internal/on-premises environments
+- Troubleshooting common issues
+
+### Quick Start: Use With VSCode + GitHub Copilot
 
 Open the following link in your browser to automatically install the server configuration in Visual Studio Code.
 

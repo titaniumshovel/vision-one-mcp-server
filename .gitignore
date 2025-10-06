@@ -1,2 +1,17 @@
 bin/
 .DS_Store
+
+# PDFs
+*.pdf
+
+# MCP config files (may contain sensitive data)
+.mcp.json
+
+# Temporary files
+*.png
+*.jpg
+*.jpeg
+run-mcp.sh
+
+# User credit data
+.vision-one/
