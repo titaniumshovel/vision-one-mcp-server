@@ -14,34 +14,57 @@ This allows users to harness the power of Large Language Models (LLM) to interpr
 
 ## Credit Management Features
 
-The MCP server includes comprehensive credit management capabilities to help you understand, track, and optimize your Vision One credit usage:
+The MCP server includes comprehensive credit management capabilities based on **official Trend Micro credit conversion rates** (from "Trend Vision One Credit Conversion Rates & Requirements Report", Sept 29, 2025).
 
-### Credit Analysis
-- **Real-time usage analysis**: Analyze actual credit consumption across endpoints, workbench investigations, sandbox submissions, and OAT detections
-- **Cost estimation**: Calculate monthly costs based on current usage patterns
-- **Optimization recommendations**: Get specific suggestions to reduce credit waste and improve efficiency
+### What This Tool Provides
+
+✅ **Accurate Credit Cost Calculations**
+- Uses official Trend Micro conversion rates for all Vision One services
+- Calculate exact monthly credit costs for:
+  - Endpoint Security (Core: 45, Essentials: 65, Pro: 300 credits/month)
+  - Sandbox Analysis (50 credits per daily reserved submission)
+  - CREM assessments (Core: 20, Essentials: 50 credits per asset)
+  - Email Security, Container Security, Data Lake, and more
+- Source: `credit-conversion.pdf` included in repository
+
+✅ **Usage Pattern Analysis**
+- Analyze actual deployment across endpoints, workbench, sandbox, etc.
+- Identify optimization opportunities (e.g., downgrade Pro to Core where appropriate)
+- Get specific cost-saving recommendations
+
+### Important Limitations
+
+⚠️ **What This Tool CANNOT Do**
+- **Does not know your purchased credit totals** - Only Vision One admins know this
+- **Cannot determine over/under-allocation** - Requires you to input your credit allocations
+- **Cannot provide exact investigation costs** - Alert investigations consume data lake credits based on complexity (varies widely)
+
+**To get utilization assessments**, you must:
+1. Use `credits_user_input` tool to store your purchased credit allocations
+2. Then use `credits_utilization_report` to compare actual usage vs. allocations
 
 ### Credit Calculator
-- Calculate estimated credits based on your deployment metrics:
-  - Number of endpoints (standard vs. Pro licenses)
-  - Daily alert investigation volumes
-  - Sandbox file/URL submissions
-  - Data lake search activity
+Calculate estimated monthly credit costs using official rates:
+- Endpoint deployments (Core/Essentials/Pro tiers)
+- Sandbox reserved submissions
+- CREM asset assessments
+- Data lake ingestion and retention
+- And more...
 
 ### User Credit Tracking
-- Input and store your own credit allocations
-- Track utilization across all Vision One services
-- Generate detailed utilization reports with:
-  - Service-by-service breakdown
-  - Utilization percentages
-  - Underutilized and overutilized service identification
-  - Cost projections
+- Input and store your purchased credit allocations locally
+- Track utilization across Vision One services
+- Generate detailed reports showing:
+  - Service-by-service cost breakdown
+  - Actual usage vs. allocated credits
+  - Underutilized and overutilized services
+  - Cost optimization recommendations
 
-### Data Storage
-Credit allocation data is stored locally in `~/.vision-one/credits.json`, providing:
-- Persistent tracking of your credit allocations
-- Historical usage patterns
-- Privacy (your credit data never leaves your machine)
+### Data Storage & Privacy
+Credit data is stored locally in `~/.vision-one/credits.json`:
+- Your credit allocation data never leaves your machine
+- Persistent tracking across sessions
+- Complete privacy - no data sent to Trend Micro or third parties
 
 ## Security
 

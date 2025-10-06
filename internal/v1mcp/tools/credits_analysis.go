@@ -73,22 +73,34 @@ func analyzeEndpointCredits(client *v1client.V1ApiClient, filter string, top int
 		analysis.Usage["proLicenses"] = proLicenses
 		analysis.Usage["standardLicenses"] = standardLicenses
 
-		// Calculate estimated credits (Pro licenses consume more credits)
-		analysis.EstimatedCredits = (proLicenses * 10) + (standardLicenses * 2)
+		// Calculate estimated monthly credits using official Trend Micro conversion rates
+		// Pro = 300 credits/month, Core/Standard = 45 credits/month (from credit-conversion.pdf)
+		estimatedMonthlyCredits := (proLicenses * 300) + (standardLicenses * 45)
+		analysis.EstimatedCredits = estimatedMonthlyCredits
+		analysis.Usage["estimatedMonthlyCredits"] = estimatedMonthlyCredits
 
-		// Generate recommendations
+		// IMPORTANT DISCLAIMER
+		analysis.Recommendations = append(analysis.Recommendations,
+			"⚠️  IMPORTANT: This analysis shows estimated credit COSTS based on official Trend Micro conversion rates.")
+		analysis.Recommendations = append(analysis.Recommendations,
+			"To assess if you're over-allocated or under-allocated, you must provide your actual purchased credit totals.")
+
+		// Generate optimization recommendations
 		if proLicenses > 0 {
 			utilization := float64(proLicenses) / float64(totalEndpoints) * 100
 			if utilization < 30 {
 				analysis.Recommendations = append(analysis.Recommendations,
-					fmt.Sprintf("Pro license utilization is low (%.1f%%). Consider reducing Pro licenses to save credits.", utilization))
+					fmt.Sprintf("Pro license deployment is low (%.1f%% of endpoints). If these don't require advanced features, consider downgrading to Core (45 credits/month) to save %d credits/month per endpoint.",
+						utilization, 300-45))
 			}
-			analysis.Usage["proUtilization"] = fmt.Sprintf("%.1f%%", utilization)
+			analysis.Usage["proDeploymentRate"] = fmt.Sprintf("%.1f%%", utilization)
 		}
 
-		if totalEndpoints > 1000 {
+		if totalEndpoints > 500 {
+			potentialCoreSavings := totalEndpoints * (65 - 45) // Essentials vs Core savings
 			analysis.Recommendations = append(analysis.Recommendations,
-				"High endpoint count detected. Consider implementing endpoint grouping to optimize credit usage.")
+				fmt.Sprintf("Large deployment (%d endpoints). Review if all endpoints need Essentials tier or if Core tier (45 credits) is sufficient. Potential savings: %d credits/month if downgrading from Essentials to Core.",
+					totalEndpoints, potentialCoreSavings))
 		}
 	}
 
@@ -157,18 +169,33 @@ func analyzeWorkbenchCredits(client *v1client.V1ApiClient, filter string, startT
 			dailyAvg := float64(totalAlerts) / days
 			analysis.Usage["dailyAverage"] = fmt.Sprintf("%.1f", dailyAvg)
 
-			// Estimate credits based on investigation activity
-			analysis.EstimatedCredits = investigated * 5 // Each investigation consumes ~5 credits
+			// IMPORTANT: Alert investigations do NOT have fixed per-alert credit costs
+			// They consume data lake search credits based on investigation complexity
+			analysis.Recommendations = append(analysis.Recommendations,
+				"⚠️  IMPORTANT: Alert investigations consume data lake search credits based on investigation depth and data volume.")
+			analysis.Recommendations = append(analysis.Recommendations,
+				"Credit cost per investigation varies widely (simple: ~10-50 credits, complex: 100-500+ credits).")
+			analysis.Recommendations = append(analysis.Recommendations,
+				"Actual costs depend on: timeline length, entities investigated, and data sources queried.")
 
 			if dailyAvg > 20 {
 				analysis.Recommendations = append(analysis.Recommendations,
-					fmt.Sprintf("High alert volume (%.1f/day). Consider tuning detection rules to reduce noise.", dailyAvg))
+					fmt.Sprintf("High alert volume (%.1f/day). Consider tuning detection rules to reduce false positives and investigation overhead.", dailyAvg))
+			}
+
+			if investigated > 0 {
+				avgInvestigationRate := float64(investigated) / float64(totalAlerts) * 100
+				analysis.Usage["investigationRate"] = fmt.Sprintf("%.1f%%", avgInvestigationRate)
+				if avgInvestigationRate > 70 {
+					analysis.Recommendations = append(analysis.Recommendations,
+						fmt.Sprintf("High investigation rate (%.1f%% of alerts). Implement automated triage to reduce manual investigation workload and data lake search costs.", avgInvestigationRate))
+				}
 			}
 		}
 
 		if highSeverity > totalAlerts/3 {
 			analysis.Recommendations = append(analysis.Recommendations,
-				"High percentage of critical alerts. Review detection thresholds to focus on true positives.")
+				"High percentage of high/critical severity alerts. Review detection thresholds to improve signal-to-noise ratio and reduce investigation costs.")
 		}
 	}
 

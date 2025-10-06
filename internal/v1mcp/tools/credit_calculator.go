@@ -6,136 +6,167 @@ import (
 )
 
 // CreditCalculator provides credit calculation and conversion utilities
+// Based on official Trend Micro documentation (credit-conversion.pdf, Sept 29, 2025)
 type CreditCalculator struct {
-	// Credit conversion rates based on Vision One documentation
-	// These are approximate values based on typical usage patterns
+	// Credit conversion rates from official Trend Vision One documentation
 	ConversionRates map[string]float64
-
-	// Service-specific multipliers
-	ServiceMultipliers map[string]float64
 }
 
-// NewCreditCalculator creates a new credit calculator with default rates
+// NewCreditCalculator creates a new credit calculator with official Trend Micro conversion rates
+// Source: Trend Vision One Credit Conversion Rates & Requirements Report (Sept 29, 2025)
 func NewCreditCalculator() *CreditCalculator {
 	return &CreditCalculator{
 		ConversionRates: map[string]float64{
-			// Endpoint Security
-			"endpoint_standard":    2.0,   // Standard endpoint protection
-			"endpoint_pro":        10.0,   // Pro license with advanced features
-			"endpoint_server":     15.0,   // Server protection
-
-			// Workbench & Investigations
-			"alert_investigation":  5.0,   // Per alert investigation
-			"threat_hunting":      10.0,   // Threat hunting query
-			"custom_detection":     3.0,   // Custom detection rule
+			// Endpoint Security (per deployment/month)
+			"endpoint_core":            45.0,  // Trend Vision One Endpoint Security - Core
+			"endpoint_essentials":      65.0,  // Trend Vision One Endpoint Security - Essentials
+			"endpoint_pro":             300.0, // Trend Vision One Endpoint Security - Pro
+			"endpoint_sensor_xdr":      20.0,  // Endpoint Sensor detection and response (XDR add-on)
+			"server_workload_advanced": 235.0, // Advanced Server/Workload Protection
 
 			// Sandbox Analysis
-			"sandbox_file":        15.0,   // File analysis
-			"sandbox_url":         10.0,   // URL analysis
-			"sandbox_priority":    25.0,   // Priority/advanced analysis
+			"sandbox_reserved_daily": 50.0, // Per daily reserved submission
 
-			// Data Lake & Search
-			"search_gb":            1.0,   // Per GB searched
-			"data_retention_day":   0.5,   // Per GB per day retained
-			"custom_pipeline":     20.0,   // Custom data pipeline
+			// CREM - Cyber Risk Exposure Management (Desktop/Server per month)
+			"crem_core_asset":       20.0, // Per assessed desktop/server (Core)
+			"crem_essentials_asset": 50.0, // Per assessed desktop/server (Essentials)
 
-			// CREM (Cyber Risk Exposure Management)
-			"risk_assessment":      8.0,   // Per asset risk assessment
-			"attack_surface_scan": 12.0,   // Attack surface discovery scan
-			"vulnerability_scan":   5.0,   // Vulnerability assessment
+			// CREM - Cloud Account Assessment (annual, tiered by resource count)
+			"crem_cloud_tier1": 1000.0, // Up to 500 resources
+			"crem_cloud_tier2": 2000.0, // 501-1,000 resources
+			"crem_cloud_tier3": 3000.0, // 1,001-1,500 resources
+			"crem_cloud_tier4": 4000.0, // 1,501-2,000 resources
+			"crem_cloud_tier5": 5000.0, // 2,001-2,500 resources
+			"crem_cloud_tier6": 6000.0, // 2,501-3,000 resources
+			"crem_cloud_tier7": 7000.0, // 3,001-3,500 resources
+			"crem_cloud_tier8": 8000.0, // 3,501+ resources (maximum)
 
-			// OAT (Observed Attack Techniques)
-			"oat_detection":        3.0,   // Per detection
-			"oat_correlation":      5.0,   // Advanced correlation
-			"mitre_mapping":        2.0,   // MITRE ATT&CK mapping
-		},
+			// Email Security (per user account per month)
+			"email_sensor":          5.0,  // Email Sensor (detection only)
+			"email_collab_core":     25.0, // Cloud Email and Collaboration Protection (core)
+			"email_collab_advanced": 25.0, // Advanced Protection add-on (additional)
+			"email_gateway_core":    25.0, // Cloud Email Gateway Protection (core)
+			"email_gateway_advanced": 25.0, // Advanced Gateway Protection add-on (additional)
 
-		ServiceMultipliers: map[string]float64{
-			"endpoint_security":     1.0,
-			"workbench":            1.2,  // Higher multiplier for investigation services
-			"sandbox":              1.5,  // Sandbox is resource-intensive
-			"data_lake":            0.8,  // Data lake has economies of scale
-			"crem":                 1.3,  // CREM requires dedicated allocation
-			"oat":                  1.0,
+			// Container Security
+			"container_k8s_node":       1100.0, // Protected Kubernetes node or Amazon ECS instance
+			"container_serverless_pod": 110.0,  // Protected serverless container pod or task
+
+			// Data Lake / Agentic SIEM
+			"datalake_ingestion_analytic_gb": 3.0,  // Third-party data ingestion (analytic) per GB
+			"datalake_ingestion_archival_gb": 1.0,  // Third-party data ingestion (archival) per GB
+			"datalake_retention_analytic_gb": 0.2,  // Per GB per month (analytic)
+			"datalake_retention_archival_gb": 0.05, // Per GB per month (archival)
+			"data_transfer_tb":               800.0, // Per TB to third-party platforms
+
+			// File Security
+			"file_security_per_scan": 0.01,    // 5,000 credits per 500,000 scans = 0.01 per scan
+			"file_security_bucket":   9636.0, // Per bucket (unlimited scans)
+
+			// Network Security
+			"network_sensor_gbps": 25000.0, // XDR Network Sensor per 1 Gbps of traffic
+
+			// Forensics
+			"forensics_evidence_gb": 400.0, // Data allowance for evidence collection per GB
+
+			// Mobile Inventory
+			"mobile_sensor_device": 5.0, // Mobile Sensor per device enrollment
+
+			// Threat Intelligence
+			"threat_insights_user":   50000.0,  // Per user account
+			"threat_intel_feed":      150000.0, // Per year
+			"threat_intel_feed_mssp": 500000.0, // For service providers per year
+
+			// NOTE: Alert investigation and workbench costs are NOT fixed per-alert
+			// They consume data lake search credits based on investigation complexity
+			// No per-alert conversion rate exists in official Trend Micro documentation
 		},
 	}
 }
 
-// CalculateEndpointCredits calculates credits for endpoint deployment
-func (c *CreditCalculator) CalculateEndpointCredits(standardCount, proCount, serverCount int) float64 {
-	credits := float64(standardCount)*c.ConversionRates["endpoint_standard"] +
+// CalculateEndpointCredits calculates credits for endpoint deployment (monthly)
+// Uses official Trend Micro conversion rates
+func (c *CreditCalculator) CalculateEndpointCredits(coreCount, essentialsCount, proCount, serverCount int) float64 {
+	credits := float64(coreCount)*c.ConversionRates["endpoint_core"] +
+		float64(essentialsCount)*c.ConversionRates["endpoint_essentials"] +
 		float64(proCount)*c.ConversionRates["endpoint_pro"] +
-		float64(serverCount)*c.ConversionRates["endpoint_server"]
+		float64(serverCount)*c.ConversionRates["server_workload_advanced"]
 
-	return credits * c.ServiceMultipliers["endpoint_security"]
+	return credits
 }
 
-// CalculateWorkbenchCredits calculates credits for workbench activity
-func (c *CreditCalculator) CalculateWorkbenchCredits(alertsPerDay, huntingQueriesPerDay, customRules int) float64 {
-	monthlyAlerts := float64(alertsPerDay * 30)
-	monthlyHunting := float64(huntingQueriesPerDay * 30)
+// CalculateWorkbenchCredits provides qualitative analysis, not fixed per-alert costs
+// Workbench alert investigations consume data lake search credits based on complexity
+// NOTE: There is NO fixed per-alert credit rate in official Trend Micro documentation
+func (c *CreditCalculator) CalculateWorkbenchCredits(alertCount int, avgDataSearchedGB float64) float64 {
+	// Estimate based on data lake search usage
+	// This is an approximation since actual costs vary by investigation complexity
+	estimatedCredits := avgDataSearchedGB * c.ConversionRates["datalake_ingestion_analytic_gb"]
 
-	credits := monthlyAlerts*c.ConversionRates["alert_investigation"] +
-		monthlyHunting*c.ConversionRates["threat_hunting"] +
-		float64(customRules)*c.ConversionRates["custom_detection"]
-
-	return credits * c.ServiceMultipliers["workbench"]
+	return estimatedCredits
 }
 
-// CalculateSandboxCredits calculates credits for sandbox usage
-func (c *CreditCalculator) CalculateSandboxCredits(filesPerDay, urlsPerDay, priorityPerDay int) float64 {
-	monthlyFiles := float64(filesPerDay * 30)
-	monthlyUrls := float64(urlsPerDay * 30)
-	monthlyPriority := float64(priorityPerDay * 30)
-
-	credits := monthlyFiles*c.ConversionRates["sandbox_file"] +
-		monthlyUrls*c.ConversionRates["sandbox_url"] +
-		monthlyPriority*c.ConversionRates["sandbox_priority"]
-
-	return credits * c.ServiceMultipliers["sandbox"]
+// CalculateSandboxCredits calculates credits for sandbox usage (reserved submissions)
+func (c *CreditCalculator) CalculateSandboxCredits(dailyReservedSubmissions int) float64 {
+	monthlyCredits := float64(dailyReservedSubmissions*30) * c.ConversionRates["sandbox_reserved_daily"]
+	return monthlyCredits
 }
 
 // CalculateDataLakeCredits calculates credits for data lake usage
-func (c *CreditCalculator) CalculateDataLakeCredits(searchGBPerDay, retentionGB, retentionDays, pipelines int) float64 {
-	monthlySearch := float64(searchGBPerDay * 30)
-	retentionCredits := float64(retentionGB) * float64(retentionDays) * c.ConversionRates["data_retention_day"]
-	pipelineCredits := float64(pipelines) * c.ConversionRates["custom_pipeline"]
+// Uses official Trend Micro conversion rates for ingestion and retention
+func (c *CreditCalculator) CalculateDataLakeCredits(analyticGB, archivalGB, retentionMonths int) float64 {
+	ingestionCredits := float64(analyticGB)*c.ConversionRates["datalake_ingestion_analytic_gb"] +
+		float64(archivalGB)*c.ConversionRates["datalake_ingestion_archival_gb"]
 
-	credits := monthlySearch*c.ConversionRates["search_gb"] +
-		retentionCredits +
-		pipelineCredits
+	retentionCredits := (float64(analyticGB)*c.ConversionRates["datalake_retention_analytic_gb"] +
+		float64(archivalGB)*c.ConversionRates["datalake_retention_archival_gb"]) *
+		float64(retentionMonths)
 
-	return credits * c.ServiceMultipliers["data_lake"]
+	return ingestionCredits + retentionCredits
 }
 
-// CalculateCREMCredits calculates credits for CREM features
-func (c *CreditCalculator) CalculateCREMCredits(assetsScanned, surfaceScansPerMonth, vulnScansPerMonth int) float64 {
-	assessmentCredits := float64(assetsScanned) * c.ConversionRates["risk_assessment"]
-	surfaceCredits := float64(surfaceScansPerMonth) * c.ConversionRates["attack_surface_scan"]
-	vulnCredits := float64(vulnScansPerMonth) * c.ConversionRates["vulnerability_scan"]
+// CalculateCREMCredits calculates credits for CREM features (Desktop/Server assessment)
+// Uses official Trend Micro conversion rates
+func (c *CreditCalculator) CalculateCREMCredits(coreAssets, essentialsAssets int) float64 {
+	credits := float64(coreAssets)*c.ConversionRates["crem_core_asset"] +
+		float64(essentialsAssets)*c.ConversionRates["crem_essentials_asset"]
 
-	credits := assessmentCredits + surfaceCredits + vulnCredits
-
-	return credits * c.ServiceMultipliers["crem"]
+	return credits
 }
 
-// CalculateOATCredits calculates credits for OAT usage
-func (c *CreditCalculator) CalculateOATCredits(detectionsPerDay, correlationsPerDay, mitreMappings int) float64 {
-	monthlyDetections := float64(detectionsPerDay * 30)
-	monthlyCorrelations := float64(correlationsPerDay * 30)
-
-	credits := monthlyDetections*c.ConversionRates["oat_detection"] +
-		monthlyCorrelations*c.ConversionRates["oat_correlation"] +
-		float64(mitreMappings)*c.ConversionRates["mitre_mapping"]
-
-	return credits * c.ServiceMultipliers["oat"]
+// CalculateCREMCloudCredits calculates credits for CREM cloud account assessment
+// Tiered pricing based on resource count (annual credits)
+func (c *CreditCalculator) CalculateCREMCloudCredits(resourceCount int) float64 {
+	if resourceCount <= 500 {
+		return c.ConversionRates["crem_cloud_tier1"]
+	} else if resourceCount <= 1000 {
+		return c.ConversionRates["crem_cloud_tier2"]
+	} else if resourceCount <= 1500 {
+		return c.ConversionRates["crem_cloud_tier3"]
+	} else if resourceCount <= 2000 {
+		return c.ConversionRates["crem_cloud_tier4"]
+	} else if resourceCount <= 2500 {
+		return c.ConversionRates["crem_cloud_tier5"]
+	} else if resourceCount <= 3000 {
+		return c.ConversionRates["crem_cloud_tier6"]
+	} else if resourceCount <= 3500 {
+		return c.ConversionRates["crem_cloud_tier7"]
+	}
+	return c.ConversionRates["crem_cloud_tier8"] // 3501+ resources
 }
 
-// EstimateMonthlyCost estimates the monthly cost in USD based on credits
+// NOTE: OAT (Observed Attack Techniques) detections do not have standalone credit costs
+// OAT is included as part of XDR sensor deployment (20 credits per endpoint)
+// Individual OAT detections do not consume additional credits
+
+// EstimateMonthlyCost provides a rough cost estimate in USD based on credits
+// NOTE: Actual credit pricing varies significantly by contract, volume, and region
+// Contact Trend Micro sales for accurate pricing
 func (c *CreditCalculator) EstimateMonthlyCost(totalCredits float64) float64 {
-	// Approximate cost per credit (varies by contract and volume)
-	costPerCredit := 5.0 // $5 per credit is a rough estimate
-	return totalCredits * costPerCredit
+	// This is a ROUGH estimate only - actual pricing varies by customer contract
+	// Typical range is $0.10 - $1.00 per credit depending on volume and commitment
+	estimatedCostPerCredit := 0.50 // Mid-range estimate
+	return totalCredits * estimatedCostPerCredit
 }
 
 // GetOptimizationRecommendations provides credit optimization recommendations

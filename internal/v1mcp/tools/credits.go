@@ -429,25 +429,28 @@ func toolCreditCalculator(client *v1client.V1ApiClient) mcpserver.ServerTool {
 			calculator := NewCreditCalculator()
 			usage := make(map[string]float64)
 
-			// Calculate endpoint credits
+			// Calculate endpoint credits (using Core tier as default for "standard")
 			if standardEndpoints > 0 || proEndpoints > 0 {
 				usage["endpoint_security"] = calculator.CalculateEndpointCredits(
-					int(standardEndpoints), int(proEndpoints), 0)
+					int(standardEndpoints), 0, int(proEndpoints), 0)
 			}
 
-			// Calculate workbench credits
+			// Calculate workbench credits (estimated - actual costs vary by investigation complexity)
 			if alertsPerDay > 0 {
-				usage["workbench"] = calculator.CalculateWorkbenchCredits(int(alertsPerDay), 0, 0)
+				// Estimate 1GB of data searched per 10 alerts as a rough approximation
+				estimatedSearchGB := float64(alertsPerDay) * 30.0 / 10.0
+				usage["workbench"] = calculator.CalculateWorkbenchCredits(int(alertsPerDay*30), estimatedSearchGB)
 			}
 
-			// Calculate sandbox credits
+			// Calculate sandbox credits (reserved daily submissions)
 			if sandboxFilesPerDay > 0 {
-				usage["sandbox"] = calculator.CalculateSandboxCredits(int(sandboxFilesPerDay), 0, 0)
+				usage["sandbox"] = calculator.CalculateSandboxCredits(int(sandboxFilesPerDay))
 			}
 
-			// Calculate data lake credits
+			// Calculate data lake credits (if provided)
 			if searchGBPerDay > 0 {
-				usage["data_lake"] = calculator.CalculateDataLakeCredits(int(searchGBPerDay), 0, 0, 0)
+				monthlyGB := int(searchGBPerDay * 30)
+				usage["data_lake"] = calculator.CalculateDataLakeCredits(monthlyGB, 0, 1) // 1 month retention
 			}
 
 			result := calculator.FormatCreditReport(usage)

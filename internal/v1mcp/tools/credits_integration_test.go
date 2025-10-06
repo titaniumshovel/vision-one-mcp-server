@@ -206,25 +206,31 @@ func testCreditCalculator(t *testing.T) {
 		t.Fatal("Failed to create credit calculator")
 	}
 
-	// Test endpoint credit calculation
-	endpointCredits := calc.CalculateEndpointCredits(100, 50, 10)
-	t.Logf("Endpoint credits (100 standard, 50 pro, 10 server): %.0f", endpointCredits)
+	// Test endpoint credit calculation with official Trend Micro rates
+	// Core: 45, Essentials: 65, Pro: 300, Server/Workload: 235 credits/month
+	endpointCredits := calc.CalculateEndpointCredits(100, 50, 10, 5) // 100 core, 50 essentials, 10 pro, 5 servers
+	expectedCredits := (100 * 45) + (50 * 65) + (10 * 300) + (5 * 235)
+	t.Logf("Endpoint credits (100 core, 50 essentials, 10 pro, 5 servers): %.0f (expected: %d)", endpointCredits, expectedCredits)
 
 	if endpointCredits <= 0 {
 		t.Error("Expected positive endpoint credits")
 	}
+	if int(endpointCredits) != expectedCredits {
+		t.Errorf("Expected %d credits, got %.0f", expectedCredits, endpointCredits)
+	}
 
-	// Test workbench credit calculation
-	workbenchCredits := calc.CalculateWorkbenchCredits(20, 5, 10)
-	t.Logf("Workbench credits (20 alerts/day, 5 hunting/day, 10 rules): %.0f", workbenchCredits)
+	// Test workbench credit calculation (based on data lake search usage estimate)
+	workbenchCredits := calc.CalculateWorkbenchCredits(20, 10.0) // 20 alerts, ~10GB searched
+	t.Logf("Workbench credits (20 alerts, 10GB data searched): %.0f", workbenchCredits)
 
 	if workbenchCredits <= 0 {
 		t.Error("Expected positive workbench credits")
 	}
 
-	// Test sandbox credit calculation
-	sandboxCredits := calc.CalculateSandboxCredits(50, 10, 5)
-	t.Logf("Sandbox credits (50 files/day, 10 URLs/day, 5 priority/day): %.0f", sandboxCredits)
+	// Test sandbox credit calculation (reserved daily submissions: 50 credits each)
+	sandboxCredits := calc.CalculateSandboxCredits(10) // 10 daily reserved submissions
+	expectedSandbox := 10 * 30 * 50                     // 10 per day * 30 days * 50 credits
+	t.Logf("Sandbox credits (10 daily reserved): %.0f (expected: %d)", sandboxCredits, expectedSandbox)
 
 	if sandboxCredits <= 0 {
 		t.Error("Expected positive sandbox credits")

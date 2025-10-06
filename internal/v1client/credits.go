@@ -7,7 +7,7 @@ import (
 // CreditsListEndpoints lists endpoints for credit analysis
 func (c *V1ApiClient) CreditsListEndpoints(filter string, queryParams QueryParameters) (*http.Response, error) {
 	return c.searchAndFilter(
-		"v3.0/endpointInventory",
+		"v3.0/endpointSecurity/endpoints",
 		filter,
 		queryParams,
 	)
